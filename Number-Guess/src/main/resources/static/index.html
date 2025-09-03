@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Number Guessing Game 🎮</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #f9f9f9; }
+        .container { max-width: 600px; margin-top: 50px; }
+        .result-box { margin-top: 20px; font-size: 18px; padding: 15px; border-radius: 10px; }
+        #attempts { font-weight: bold; margin-top: 15px; }
+    </style>
+</head>
+<body>
+    <div class="container text-center">
+        <h1 class="mb-4 text-primary">🎮 Number Guessing Game</h1>
+
+        <!-- Difficulty selector -->
+        <div class="mb-3">
+            <label class="form-label fw-bold">Select Difficulty:</label>
+            <select id="difficulty" class="form-select w-50 mx-auto">
+                <option value="easy">Easy (1–50)</option>
+                <option value="medium" selected>Medium (1–100)</option>
+                <option value="hard">Hard (1–500)</option>
+            </select>
+        </div>
+
+        <button id="startBtn" class="btn btn-success mb-3" onclick="startGame()">Start New Game</button>
+
+        <div class="input-group mb-3">
+            <input type="number" id="guessInput" class="form-control" placeholder="Enter your guess" disabled>
+            <button id="guessBtn" class="btn btn-primary" onclick="makeGuess()" disabled>Guess</button>
+        </div>
+
+        <button id="statusBtn" class="btn btn-info mb-3" onclick="checkStatus()" disabled>Check Status</button>
+
+        <div id="attempts"></div>
+        <div id="result" class="result-box"></div>
+		<div class="mb-3">
+		    <label class="form-label fw-bold">Enter Player Name:</label>
+		    <input type="text" id="playerName" class="form-control w-50 mx-auto" placeholder="Your name">
+		</div>
+
+		
+
+    </div>
+
+    <script>
+        const maxAttempts = 5;
+        let attemptsLeft = maxAttempts;
+
+        async function startGame() {
+            const difficulty = document.getElementById("difficulty").value;
+            const res = await fetch(`/game/start/${difficulty}`, { method: 'POST' });
+            const text = await res.text();
+            showMessage(text, "alert alert-secondary");
+
+            attemptsLeft = maxAttempts;
+            updateAttempts();
+
+            document.getElementById('guessInput').disabled = false;
+            document.getElementById('guessBtn').disabled = false;
+            document.getElementById('statusBtn').disabled = false;
+            document.getElementById('startBtn').innerText = "Restart Game";
+        }
+
+        async function makeGuess() {
+            const number = document.getElementById('guessInput').value;
+            if (!number) {
+                showMessage("⚠️ Please enter a number!", "alert alert-warning");
+                return;
+            }
+
+            const res = await fetch(`/game/guess/${number}`, { method: 'POST' });
+            const text = await res.text();
+
+            if (text.includes("Correct")) {
+                showMessage(text, "alert alert-success");
+                endGame();
+            } else if (text.includes("Game Over")) {
+                showMessage(text, "alert alert-danger");
+                endGame();
+            } else {
+                attemptsLeft--;
+                updateAttempts();
+                showMessage(text, "alert alert-warning");
+                if (attemptsLeft <= 0) {
+                    endGame();
+                }
+            }
+        }
+
+        async function checkStatus() {
+            const res = await fetch('/game/status');
+            const text = await res.text();
+            showMessage(text, "alert alert-info");
+        }
+
+        function showMessage(message, cssClass) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = cssClass;
+            resultDiv.innerText = message;
+        }
+
+        function updateAttempts() {
+            document.getElementById('attempts').innerText = `Attempts left: ${attemptsLeft}`;
+        }
+
+        function endGame() {
+            document.getElementById('guessInput').disabled = true;
+            document.getElementById('guessBtn').disabled = true;
+            document.getElementById('statusBtn').disabled = true;
+            document.getElementById('attempts').innerText = "Game finished! 🎯";
+        }
+		async function startGame() {
+		    const difficulty = document.getElementById("difficulty").value;
+		    const player = document.getElementById("playerName").value;
+		    if (!player) {
+		        showMessage("⚠️ Please enter player name!", "alert alert-warning");
+		        return;
+		    }
+
+		    const res = await fetch(`/game/start/${difficulty}/${player}`, { method: 'POST' });
+		    const text = await res.text();
+		    showMessage(text, "alert alert-secondary");
+
+		    attemptsLeft = maxAttempts;
+		    updateAttempts();
+
+		    document.getElementById('guessInput').disabled = false;
+		    document.getElementById('guessBtn').disabled = false;
+		    document.getElementById('statusBtn').disabled = false;
+		    document.getElementById('startBtn').innerText = "Restart Game";
+		    updateLeaderboard();
+		}
+
+		async function updateLeaderboard() {
+		    const res = await fetch('/game/leaderboard');
+		    const data = await res.json();
+
+		    const table = document.getElementById("leaderboardTable");
+		    table.innerHTML = "";
+
+		    for (let player in data) {
+		        let row = `<tr><td>${player}</td><td>${data[player]}</td></tr>`;
+		        table.innerHTML += row;
+		    }
+		}
+
+    </script>
+</body>
+</html>
