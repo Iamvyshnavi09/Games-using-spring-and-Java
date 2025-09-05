@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Rock Paper Scissors</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: cyan; /* ✅ Cyan background */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+        h2 {
+            color: darkblue;
+            margin-bottom: 20px;
+        }
+        input {
+            padding: 8px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            border: 1px solid #333;
+        }
+        button {
+            margin: 10px;
+            padding: 12px 20px;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            background-color: #333;
+            color: white;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background-color: darkblue;
+        }
+        #message {
+            margin-top: 15px;
+            font-weight: bold;
+            color: green;
+            font-size: 20px;
+        }
+        table {
+            border-collapse: collapse;
+            width: 80%;
+            max-width: 600px;
+            margin-top: 20px;
+            background: white;
+            box-shadow: 0px 4px 8px rgba(0,0,0,0.2);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 12px;
+            text-align: center;
+            font-size: 16px;
+        }
+        th {
+            background-color: #333;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h2>Rock Paper Scissors 🏆🎮</h2>
+
+    <label for="playerName">Enter your name:</label>
+    <input type="text" id="playerName" placeholder="Your Name">
+    <br>
+
+    <!-- Play buttons -->
+    <div>
+        <button onclick="play('rock')">Rock ✊</button>
+        <button onclick="play('paper')">Paper ✋</button>
+        <button onclick="play('scissors')">Scissors ✌️</button>
+        <button onclick="resetGame()">Restart 🔄</button>
+    </div>
+
+    <!-- Thank you / Game over message -->
+    <div id="message"></div>
+
+    <h3>Round History</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Round</th>
+                <th>Player Choice</th>
+                <th>Computer Choice</th>
+                <th>Result</th>
+            </tr>
+        </thead>
+        <tbody id="historyBody"></tbody>
+    </table>
+
+    <script>
+        let attempt = 0;
+        const maxAttempts = 3;
+        const historyTable = document.getElementById("historyBody");
+        const messageBox = document.getElementById("message");
+
+        function play(choice) {
+            const playerName = document.getElementById("playerName").value;
+            if (!playerName) {
+                alert("Please enter your name first!");
+                return;
+            }
+
+            if (attempt >= maxAttempts) {
+                messageBox.innerText = "Game over! Thank you for playing 🎉";
+                return;
+            }
+
+            fetch(`/rps/play?name=${playerName}&choice=${choice}`, { method: "POST" })
+                .then(response => response.json())
+                .then(data => {
+                    attempt++;
+
+                    // Add round to history
+                    let row = `<tr>
+                                <td>${data.attempt}</td>
+                                <td>${data.playerChoice}</td>
+                                <td>${data.computerChoice}</td>
+                                <td>${data.result}</td>
+                               </tr>`;
+                    historyTable.innerHTML += row;
+
+                    // If max attempts reached
+                    if (attempt >= maxAttempts) {
+                        messageBox.innerText = "Game over! Thank you for playing 🎉";
+                    }
+                });
+        }
+
+        function resetGame() {
+            fetch("/rps/reset", { method: "POST" })
+                .then(() => {
+                    attempt = 0;
+                    historyTable.innerHTML = "";
+                    messageBox.innerText = "";
+                });
+        }
+    </script>
+</body>
+</html>
