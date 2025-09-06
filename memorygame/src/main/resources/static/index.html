@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>🃏 Memory Game</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #f4f4f9;
+    }
+    h1 {
+      color: #333;
+    }
+    #game-board {
+      display: grid;
+      grid-template-columns: repeat(4, 100px);
+      grid-gap: 15px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    .card {
+      width: 100px;
+      height: 100px;
+      background: #4CAF50;
+      color: white;
+      font-size: 2rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .flipped {
+      background: #fff;
+      color: #333;
+      border: 2px solid #4CAF50;
+      cursor: default;
+    }
+    .matched {
+      background: #888;
+      color: #fff;
+      cursor: default;
+    }
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      background: #2196F3;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0b7dda;
+    }
+  </style>
+</head>
+<body>
+  <h1>🃏 Memory Game</h1>
+  <button onclick="startGame()">Start New Game</button>
+  <div id="game-board"></div>
+
+  <script>
+    let cards = [];
+    let flipped = [];
+    const apiBase = "/api/memory";
+
+    async function startGame() {
+      const res = await fetch(apiBase + "/start", { method: "POST" });
+      cards = await res.json();
+      renderCards();
+    }
+
+    async function renderCards() {
+      const board = document.getElementById("game-board");
+      board.innerHTML = "";
+      cards.forEach(card => {
+        const div = document.createElement("div");
+        div.className = "card";
+        div.dataset.id = card.id;
+        div.textContent = "?"; // hidden by default
+        div.onclick = () => flipCard(div);
+        board.appendChild(div);
+      });
+    }
+
+    async function flipCard(div) {
+      if (div.classList.contains("flipped") || div.classList.contains("matched")) return;
+
+      const cardId = div.dataset.id;
+      const card = cards.find(c => c.id == cardId);
+
+      div.textContent = card.symbol;
+      div.classList.add("flipped");
+      flipped.push(div);
+
+      if (flipped.length === 2) {
+        const [first, second] = flipped;
+        const res = await fetch(`${apiBase}/match/${first.dataset.id}/${second.dataset.id}`, { method: "POST" });
+        const result = await res.text();
+
+        if (result.includes("✅")) {
+          first.classList.add("matched");
+          second.classList.add("matched");
+        } else {
+          setTimeout(() => {
+            first.textContent = "?";
+            second.textContent = "?";
+            first.classList.remove("flipped");
+            second.classList.remove("flipped");
+          }, 1000);
+        }
+        flipped = [];
+      }
+    }
+  </script>
+</body>
+</html>
